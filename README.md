@@ -1,7 +1,5 @@
 # Arch Install
 
-## Table of contents
-
 ## Pre-chroot
 
 Update system clock:
@@ -11,7 +9,7 @@ timedatectl set-ntp true
 
 Setup partitioning:
 ```sh
-fdisk -l
+gdisk -l
 ```
 Look for the model of disk you want to install the OS on
 Write the the disk down. Common names used are /dev/sdX or /dev/nvme0nX. Where X should be replaced with the disk letter
@@ -19,12 +17,10 @@ Write the the disk down. Common names used are /dev/sdX or /dev/nvme0nX. Where X
 Example used: /dev/nvme0n1. Replace with corresponding disk
 
 ```sh
+gdisk /dev/nvme0n1
 
-
-fdisk /dev/nvme0n1
-
-# the following commands are ran inside fdisk
-# delete existing partitions with, run the d command until you have no partitions left
+# the following commands are ran inside gdisk
+# delete existing partitions with, run the d command until you have no partitions left (unless you want to dual boot, don't delete the windows partitions)
 d
 => 1,2,3,...
 
@@ -32,14 +28,15 @@ d
 n
 => default = 1
 => default
-# EFI partition can be between 500M and 1 G
-=> +800M
+=> +1G
+=> EF00
 
 # create a swap partition
 n
 => default = 2
 => default
 => +32G # take the size of your RAM or half of it
+=> default
 
 # partition for our Linux system
 n
@@ -47,28 +44,23 @@ n
 => default
 => default
 
-# Set the type of our first partition to EFI
-t
-=> 1
-
-# Write changes  --IMPORTANT--
+# Write changes --IMPORTANT--
 w
 ```
 
 assuming your disk name is /dev/nvme0n1
 Format Partitions:
 ```bash
-mkfs.ext4 /dev/nvme0n1p3
+mkfs.fat -F 32 /dev/nvme0n1p1
 
 mkswap /dev/nvme0n1p2
 
-mkfs.fat -F 32 /dev/nvme0n1p1
+mkfs.ext4 /dev/nvme0n1p3
 ```
 
 Mount partitions
 ```bash
 mount /dev/nvme0n1p3 /mnt
-
 mkdir /mnt/boot
 mount /dev/nvme0n1p1 /mnt/boot
 
@@ -79,9 +71,7 @@ Before we can go onto installing our system we'll enable some things that'll mak
 ```bash
 nano /etc/pacman.conf
 
-...
-ParallelDownloads 20
-...
+ParallelDownloads=20
 ```
 
 Install base system and kernel
@@ -153,64 +143,65 @@ Set the password for our new user
 passwd username
 ```
 
-### Installing boot loader
-
-## `OPTION 1: REFIND (NOT RECOMMENDED)`
-```bash
-pacman -S refind
-```
-
-```bash
-refind-install
-```
-
-Install micro-code patches for your CPU:
-```bash
-pacman -S amd-ucode
-# or
-pacman -S intel-ucode
-```
-
-Log fstab:
-```bash
-cat /etc/fstab
-
-=>
-
-# Static information about the filesystems.
-# See fstab(5) for details.
-
-# <file system> <dir> <type> <options> <dump> <pass>
-# /dev/nvme0n1p3
-UUID=a9d51ea5-3fab-4c85-9e35-18dfe25fad02       /               ext4            rw,relatime     0 1
-
-# /dev/nvme0n1p1
-UUID=7A00-2C23          /boot           vfat            rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro   0 2
-
-# /dev/nvme0n1p2
-UUID=98850be0-6397-408a-8a16-cbae126a9486       none            swap            defaults        0 0
-```
-
-Take note of the partition with `UUID=a9d51ea5-3fab-4c85-9e35-18dfe25fad02`, this UUID will be different for your system but make sure you take note of this as we'll need it for our refind_linux.conf.
-
-#### Fixing Refind
-
-```bash
-nano /boot/refind_linux.conf
-```
-
-Make sure what you find in this file looks about the same as the below content, replace the UUID with the one you took note of previously.
-```text
-"Boot with standard options"  "root=UUID=a9d51ea5-3fab-4c85-9e35-18dfe25fad02 rw initrd=amd-ucode.img initrd=initramfs-linux.img"
-"Boot to single-user mode"    "root=UUID=a9d51ea5-3fab-4c85-9e35-18dfe25fad02 single"
-"Boot with minimal options"   "ro root=/dev/nvme0n1p3"
-```
-Also replace `amd-ucode` with `intel-ucode` if you have an intel CPU.
-
-## `OPTION 2: bootctl (RECOMMENDED)`
-
+# Installing boot loader
+## bootctl
 ```bash
 bootctl install
+```
+
+### add Arch entry
+
+add a new file to `/boot/loader/entries` named `arch.conf` and add the following content:
+```bash
+title   Arch Linux
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options /root=/dev/nvme0n1p3 #this can be different depending on your specific install
+```
+
+### add Windows entry for dual boot
+install edk2-shell and copy the file to your boot partition
+```bash
+sudo pacman -S edk2-shell
+sudo cp /usr/share/edk2-shell/x64/Shell.efi /boot/shellx64.efi
+```
+
+get the PARTUUID for your windows-esp partition
+```bash
+sudo blkid | grep vfat
+```
+
+Usually, the Windows EFI Partiton is labelled “EFI system partition”, you should get a line that looks like that:
+```bash
+/dev/nvme1n1p2: UUID="52CC-E135" BLOCK_SIZE="512" TYPE="vfat" PARTLABEL="EFI system partition" PARTUUID="e2cc5bf0-9654-4ba3-bdc7-cdb1c2db2c3b"
+```
+
+set console-mode to max in loader config
+```bash
+sudo nano /boot/loader/loader.conf
+
+> add the following line to the file
+console-mode max
+```
+
+reboot and choose EFI shell in the loader screen which gets autocreated if you copied the `shellx64.efi` file correctly.
+it should display a list of FS aliases followed by that fs alias' partition details. if it does not enter the command map.
+
+take note of the FS alias that contains the `PARTUUID` you got from the windows partition. this can look something like HD0b or HD2c but can also be longer.
+
+enter the exit command and reboot into your linux installation.
+
+create a file in your boot partition called `windows.nsh` and add the following with your correct fs alias:
+```bash
+HD2c:EFI\Microsoft\Boot\Bootmgfw.efi
+```
+
+now create a loader entry for that windows installation by creating a file windows.conf under `/boot/loader/entries` with the following content:
+
+```bash
+title   Windows
+efi     /shellx64.efi
+options -nointerrupt -noconsolein -noconsoleout windows.nsh
 ```
 
 ### Installing KDE plasma
@@ -250,4 +241,17 @@ nano /etc/sudoers
 exit
 
 reboot
+```
+
+
+
+# update in case of incorrect GPG keys
+```bash
+rm -rf /etc/pacman.d/gnupg/
+
+pacman-key --init
+pacman-key --populate archlinux
+parkan-key --refresh-keys
+
+pacman -S archlinux-keyring
 ```
