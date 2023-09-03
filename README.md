@@ -9,7 +9,7 @@ timedatectl set-ntp true
 
 Setup partitioning:
 ```sh
-gdisk -l
+fdisk -l
 ```
 Look for the model of disk you want to install the OS on
 Write the the disk down. Common names used are /dev/sdX or /dev/nvme0nX. Where X should be replaced with the disk letter
