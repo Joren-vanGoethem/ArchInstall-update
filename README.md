@@ -68,6 +68,11 @@ mount /dev/nvme0n1p1 /mnt/boot
 swapon /dev/nvme0n1p2
 ```
 
+install nano
+```bash
+pacman -S nano
+```
+
 Before we can go onto installing our system we'll enable some things that'll make our downloads faster.
 ```bash
 nano /etc/pacman.conf
