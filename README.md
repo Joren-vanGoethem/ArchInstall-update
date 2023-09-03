@@ -210,15 +210,31 @@ efi     /shellx64.efi
 options -nointerrupt -noconsolein -noconsoleout windows.nsh
 ```
 
+### installing necessary tools
+installing networkmanager and enabling the service for network access after install
+```bash
+pacman -S networkmanager
+systemctl enable NetworkManager
+```
+
+Setup Sudo
+```bash
+pacman -S sudo
+groupadd sudo
+usermod -aG sudo username
+nano /etc/sudoers
+# => uncomment users in sudo group can use sudo
+```
+
 ### Installing KDE plasma
 `important` use plasma-desktop if you want a basic set of utilities like text editor, calculator, file explorer,....
 ```bash
 pacman -S xorg-server plasma-meta
 ```
 
-Enabling SDDM and NetworkManager (not sure if required but it doesn't hurt to do it anyways)
+Enabling SDDM
 ```bash
-systemctl enable sddm NetworkManager
+systemctl enable sddm
 ```
 
 ### Install a Terminal and file explorer
@@ -228,28 +244,12 @@ flatpak is for software installation using discover
 pacman -S konsole dolphin flatpak
 ```
 
-### Setup Sudo
-
-```bash
-pacman -S sudo
-
-groupadd sudo
-
-usermod -aG sudo username
-
-nano /etc/sudoers
-# => uncomment users in sudo group can use sudo
-```
-
 ### Exit Chroot and Reboot
 
 ```bash
 exit
-
 reboot
 ```
-
-
 
 # update in case of incorrect GPG keys
 ```bash
