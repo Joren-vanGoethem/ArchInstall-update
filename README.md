@@ -261,3 +261,7 @@ parkan-key --refresh-keys
 
 pacman -S archlinux-keyring
 ```
+
+# installing a font containing emojis
+
+run the fonts.sh script in this repository with root priveleges
