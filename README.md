@@ -162,7 +162,7 @@ add a new file to `/boot/loader/entries` named `arch.conf` and add the following
 title   Arch Linux
 linux   /vmlinuz-linux
 initrd  /initramfs-linux.img
-options /root=/dev/nvme0n1p3 #this can be different depending on your specific install
+options root=/dev/nvme0n1p3 #this can be different depending on your specific install
 ```
 
 ### add Windows entry for dual boot
