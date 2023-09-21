@@ -257,7 +257,7 @@ rm -rf /etc/pacman.d/gnupg/
 
 pacman-key --init
 pacman-key --populate archlinux
-parkan-key --refresh-keys
+pacman-key --refresh-keys
 
 pacman -S archlinux-keyring
 ```
