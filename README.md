@@ -80,7 +80,7 @@ nano /etc/pacman.conf
 ParallelDownloads=20
 ```
 
-Install base system and kernel
+Install base system and kernel (add nano if you don't want to use vim for further steps)
 ```bash
 pacstrap /mnt base linux linux-firmware base-devel
 ```
@@ -107,7 +107,7 @@ Sync hardware clock
 hwclock --systohc
 ```
 
-### Setting Locale
+### Setting Locale (optional, i usually don't and it works)
 
 Localization:
 ```bash
@@ -130,7 +130,7 @@ Set hostname:
 ```bash
 nano /etc/hostname
 
-sapphire
+yourpcname
 ```
 
 ### Setup Users
@@ -227,7 +227,8 @@ nano /etc/sudoers
 ```
 
 ### Installing KDE plasma
-`important` use plasma-desktop if you want a basic set of utilities like text editor, calculator, file explorer,....
+`important` use plasma-desktop instead of plasma-meta if you want a basic set of utilities like text editor, calculator, file explorer,....
+plasma-meta is more of a barebones setup
 ```bash
 pacman -S xorg-server plasma-meta
 ```
@@ -238,7 +239,7 @@ systemctl enable sddm
 ```
 
 ### Install a Terminal and file explorer
-you can use others, we use these and they work great
+you can use others, but dolphin and konsole are the default for kde
 flatpak is for software installation using discover
 ```bash
 pacman -S konsole dolphin flatpak
